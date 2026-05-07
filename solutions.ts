@@ -1,27 +1,22 @@
-// Problem 1
 const filterEvenNumbers = (numArr: number[]): number[] => {
   return numArr.filter((num) => num % 2 === 0);
 };
 
-// Problem 2
 const reverseString = (inputString: string): string => {
   const result = inputString.split("").reverse();
   return result.join("");
 };
 
-// Problem 3
 type StringOrNumber = string | number;
 
 const checkType = (input: StringOrNumber): "String" | "Number" => {
   return typeof input === "string" ? "String" : "Number";
 };
 
-// Problem 4
 const getProperty = <T, K extends keyof T>(obj: T, key: K): T[K] => {
   return obj[key];
 };
 
-// Problem 5
 interface Book {
   title: string;
   author: string;
@@ -35,7 +30,6 @@ const toggleReadStatus = (book: Book): Book & { isRead: boolean } => {
   };
 };
 
-// Problem 6
 class Person {
   constructor(
     public name: string,
@@ -57,7 +51,6 @@ class Student extends Person {
   }
 }
 
-// Problem 7
 const getIntersection = (arr1: number[], arr2: number[]): number[] => {
   const arr2Set = new Set(arr2);
 
