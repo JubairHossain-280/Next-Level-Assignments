@@ -1,7 +1,13 @@
 import app from "./app.js";
+import config from "./config/index.js";
+import { initDB } from "./db/index.js";
 
-const port = 3000;
+const main = () => {
+  initDB();
 
-app.listen(port, () => {
-  console.log(`Server running on port http://localhost:${port}`);
-});
+  app.listen(config.port, () => {
+    console.log(`Server running on port http://localhost:${config.port}`);
+  });
+};
+
+main();
