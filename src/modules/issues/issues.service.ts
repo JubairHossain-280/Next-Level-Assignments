@@ -1,12 +1,12 @@
 import { pool } from "../../db/index.js";
 import { UserModel } from "../../types/index.js";
-import { IIssues } from "./issues.interface.js";
+import { IIssues, QueryParams } from "./issues.interface.js";
 
 const createIssuesIntoDB = async (payload: IIssues, reporterId: number) => {
   const { title, description, type } = payload;
 
-  if (type && type !== "bug" && type !== "feature_request") {
-    throw new Error("Issues type must be bug or feature_request");
+  if (type !== "bug" && type !== "feature_request") {
+    throw new Error("Bad Request!");
   }
 
   const result = await pool.query(
@@ -22,22 +22,20 @@ const createIssuesIntoDB = async (payload: IIssues, reporterId: number) => {
   return result.rows[0];
 };
 
-const getAllIssuesFromDB = async (
-  sort: string,
-  type: string | undefined,
-  status: string | undefined,
-) => {
+const getAllIssuesFromDB = async (queryParams: QueryParams) => {
+  const { sort, type, status } = queryParams;
+
   const conditions = [];
   const values = [];
-  let parameterize = 1;
+  let parameterizeIndex = 1;
 
   if (type) {
-    conditions.push(`type = $${parameterize++}`);
+    conditions.push(`type = $${parameterizeIndex++}`);
     values.push(type);
   }
 
   if (status) {
-    conditions.push(`status = $${parameterize++}`);
+    conditions.push(`status = $${parameterizeIndex++}`);
     values.push(status);
   }
 
@@ -93,7 +91,7 @@ const getSingleIssueFromDB = async (id: string) => {
   );
 
   if (issueResult.rows.length === 0) {
-    throw new Error("Issue not found!");
+    throw new Error("Not Found!");
   }
 
   const { reporter_id, created_at, updated_at, ...issue } = issueResult.rows[0];
@@ -130,7 +128,7 @@ const updateIssueIntoDB = async (
   );
 
   if (issueResult.rows.length === 0) {
-    throw new Error("Issue not found!");
+    throw new Error("Not Found!");
   }
 
   const issue = issueResult.rows[0];
@@ -139,7 +137,7 @@ const updateIssueIntoDB = async (
     user.role !== "maintainer" &&
     !(user.id === issue.reporter_id && issue.status === "open")
   ) {
-    throw new Error("Forbidden Access!");
+    throw new Error("Forbidden!");
   }
 
   const { title, description, type, status } = payload;
@@ -158,7 +156,7 @@ const updateIssueIntoDB = async (
     [title, description, type, status, id],
   );
 
-  return result;
+  return result.rows[0];
 };
 
 const deleteIssueFromDB = async (id: string) => {
@@ -171,7 +169,7 @@ const deleteIssueFromDB = async (id: string) => {
   );
 
   if (issueResult.rows.length === 0) {
-    throw new Error("Issue not found!");
+    throw new Error("Not Found!");
   }
 
   const result = await pool.query(

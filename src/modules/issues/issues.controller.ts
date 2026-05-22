@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { issuesService } from "./issues.service.js";
 import { UserModel } from "../../types/index.js";
+import { errorResponse, sendResponse } from "../../utils/response.js";
+import { QueryParams } from "./issues.interface.js";
 
 const createIssues = async (req: Request, res: Response) => {
   try {
@@ -8,42 +10,24 @@ const createIssues = async (req: Request, res: Response) => {
 
     const result = await issuesService.createIssuesIntoDB(req.body, id);
 
-    res.status(201).json({
-      success: true,
-      message: "Issue created successfully",
-      data: result,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      data: null,
-    });
+    sendResponse(res, 201, "Issue created successfully", result);
+  } catch (error) {
+    errorResponse(res, error as Error);
   }
 };
 
 const getAllIssues = async (req: Request, res: Response) => {
   try {
-    const sort = typeof req.query.sort === "string" ? req.query.sort : "newest";
-
-    const type =
-      typeof req.query.type === "string" ? req.query.type : undefined;
-
-    const status =
-      typeof req.query.status === "string" ? req.query.status : undefined;
-
-    const result = await issuesService.getAllIssuesFromDB(sort, type, status);
+    const result = await issuesService.getAllIssuesFromDB(
+      req.query as QueryParams,
+    );
 
     res.status(200).json({
       success: true,
       data: result,
     });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      data: null,
-    });
+  } catch (error) {
+    errorResponse(res, error as Error);
   }
 };
 
@@ -57,12 +41,8 @@ const getSingleIssue = async (req: Request, res: Response) => {
       success: true,
       data: result,
     });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      data: null,
-    });
+  } catch (error) {
+    errorResponse(res, error as Error);
   }
 };
 
@@ -76,25 +56,9 @@ const updateIssues = async (req: Request, res: Response) => {
       req.user as UserModel,
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Issue not found!",
-        data: null,
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Issue updated successfully",
-      data: result.rows[0],
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      data: null,
-    });
+    sendResponse(res, 200, "Issue updated successfully", result);
+  } catch (error) {
+    errorResponse(res, error as Error);
   }
 };
 
@@ -108,14 +72,8 @@ const deleteIssues = async (req: Request, res: Response) => {
       success: true,
       message: "Issue deleted successfully",
     });
-  } catch (error: any) {
-    const status = error.message === "Issue not found!" ? 404 : 500;
-
-    res.status(status).json({
-      success: false,
-      message: error.message,
-      errors: error,
-    });
+  } catch (error) {
+    errorResponse(res, error as Error);
   }
 };
 

@@ -1,21 +1,14 @@
 import { Request, Response } from "express";
 import { authService } from "./auth.service.js";
+import { errorResponse, sendResponse } from "../../utils/response.js";
 
 const registerNewUser = async (req: Request, res: Response) => {
   try {
     const result = await authService.createUserIntoDB(req.body);
 
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      data: result.rows[0],
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      data: null,
-    });
+    sendResponse(res, 201, "User registered successfully", result);
+  } catch (error) {
+    errorResponse(res, error as Error);
   }
 };
 
@@ -23,17 +16,9 @@ const loginUser = async (req: Request, res: Response) => {
   try {
     const result = await authService.loginUserIntoDB(req.body);
 
-    res.status(200).json({
-      success: true,
-      message: "Login successful",
-      data: result,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      data: null,
-    });
+    sendResponse(res, 200, "Login successful", result);
+  } catch (error) {
+    errorResponse(res, error as Error);
   }
 };
 

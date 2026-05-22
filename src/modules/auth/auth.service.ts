@@ -39,7 +39,7 @@ const createUserIntoDB = async (payload: IRegister) => {
     [name, email, hashedPassword, role],
   );
 
-  return result;
+  return result.rows[0];
 };
 
 const loginUserIntoDB = async (payload: ILogin) => {
@@ -54,7 +54,7 @@ const loginUserIntoDB = async (payload: ILogin) => {
   );
 
   if (userData.rows.length === 0) {
-    throw new Error("Invalid credentials!");
+    throw new Error("Invalid Credentials!");
   }
 
   const user = userData.rows[0];
@@ -62,7 +62,7 @@ const loginUserIntoDB = async (payload: ILogin) => {
   const matchPassword = await bcrypt.compare(password, user.password);
 
   if (!matchPassword) {
-    throw new Error("Invalid credentials!");
+    throw new Error("Invalid Credentials!");
   }
 
   const tokenPayload = {
