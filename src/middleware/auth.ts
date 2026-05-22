@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import config from "../config/index.js";
 import { pool } from "../db/index.js";
-import { Roles } from "../types/index.js";
+import { UserModel } from "../types/index.js";
 
-const auth = (...roles: Roles[]) => {
+const auth = (...roles: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const token = req.headers.authorization;
@@ -20,7 +20,7 @@ const auth = (...roles: Roles[]) => {
       const decoded = jwt.verify(
         token as string,
         config.secret as jwt.Secret,
-      ) as JwtPayload;
+      ) as UserModel;
 
       const user = await pool.query(
         `

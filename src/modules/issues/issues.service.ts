@@ -1,4 +1,5 @@
 import { pool } from "../../db/index.js";
+import { UserModel } from "../../types/index.js";
 import { IIssues } from "./issues.interface.js";
 
 const createIssuesIntoDB = async (payload: IIssues, reporterId: number) => {
@@ -82,7 +83,112 @@ const getAllIssuesFromDB = async (
   }));
 };
 
+const getSingleIssueFromDB = async (id: string) => {
+  const issueResult = await pool.query(
+    `
+      SELECT * FROM issues
+      WHERE id = $1
+    `,
+    [id],
+  );
+
+  if (issueResult.rows.length === 0) {
+    throw new Error("Issue not found!");
+  }
+
+  const { reporter_id, created_at, updated_at, ...issue } = issueResult.rows[0];
+
+  const reporterResult = await pool.query(
+    `
+      SELECT id, name, role FROM users
+      WHERE id = $1
+    `,
+    [reporter_id],
+  );
+
+  const reporterDetails = reporterResult.rows[0] ?? null;
+
+  return {
+    ...issue,
+    reporter: reporterDetails,
+    created_at,
+    updated_at,
+  };
+};
+
+const updateIssueIntoDB = async (
+  payload: IIssues,
+  id: string,
+  user: UserModel,
+) => {
+  const issueResult = await pool.query(
+    `
+      SELECT * FROM issues
+      WHERE id = $1
+    `,
+    [id],
+  );
+
+  if (issueResult.rows.length === 0) {
+    throw new Error("Issue not found!");
+  }
+
+  const issue = issueResult.rows[0];
+
+  if (
+    user.role !== "maintainer" &&
+    !(user.id === issue.reporter_id && issue.status === "open")
+  ) {
+    throw new Error("Forbidden Access!");
+  }
+
+  const { title, description, type, status } = payload;
+
+  const result = await pool.query(
+    `
+      UPDATE issues
+      SET title = COALESCE($1,title),
+      description = COALESCE($2,description),
+      type = COALESCE($3,type),
+      status = COALESCE($4,status),
+      updated_at = NOW()
+      WHERE id = $5
+      RETURNING *
+    `,
+    [title, description, type, status, id],
+  );
+
+  return result;
+};
+
+const deleteIssueFromDB = async (id: string) => {
+  const issueResult = await pool.query(
+    `
+      SELECT * FROM issues
+      WHERE id = $1
+    `,
+    [id],
+  );
+
+  if (issueResult.rows.length === 0) {
+    throw new Error("Issue not found!");
+  }
+
+  const result = await pool.query(
+    `
+      DELETE FROM issues
+      WHERE id = $1
+    `,
+    [id],
+  );
+
+  return result;
+};
+
 export const issuesService = {
   createIssuesIntoDB,
   getAllIssuesFromDB,
+  getSingleIssueFromDB,
+  updateIssueIntoDB,
+  deleteIssueFromDB,
 };
