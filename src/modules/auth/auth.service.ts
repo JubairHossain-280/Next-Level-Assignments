@@ -54,7 +54,7 @@ const loginUserIntoDB = async (payload: ILogin) => {
   );
 
   if (userData.rows.length === 0) {
-    throw new Error("User not found!");
+    throw new Error("Invalid credentials!");
   }
 
   const user = userData.rows[0];
@@ -62,7 +62,7 @@ const loginUserIntoDB = async (payload: ILogin) => {
   const matchPassword = await bcrypt.compare(password, user.password);
 
   if (!matchPassword) {
-    throw new Error("Password do not match!");
+    throw new Error("Invalid credentials!");
   }
 
   const tokenPayload = {
