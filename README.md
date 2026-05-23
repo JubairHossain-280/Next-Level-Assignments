@@ -7,7 +7,7 @@
 ## 🌐 Live URL
 
 ```
-https://your-deployment-url.com
+https://dev-pulse-weld-phi.vercel.app/
 ```
 
 ---
