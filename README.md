@@ -1,426 +1,206 @@
-# 📝 Assignment 02
+# DevPulse 🚼
 
-# 🚼 DevPulse
-
-> Internal Tech Issue & Feature Tracker
-> 
-> 
-> *A collaborative platform for software teams to report bugs, suggest features, and coordinate resolutions.*
-> 
+> **Internal Tech Issue & Feature Tracker** — A collaborative platform for software teams to report bugs, suggest features, and coordinate resolutions.
 
 ---
 
-## 🛠️ Technology Stack
+## 🌐 Live URL
 
-| Technology | Note |
-| --- | --- |
-| Node.js | LTS runtime (24.x or higher) |
-| TypeScript | use latest version, dont use beta version |
-| Express.js | Modular router architecture |
-| PostgreSQL | Relational database, native `pg` driver only |
-| Raw SQL | Direct `pool.query()` calls, absolutely no query builders, ORMs, or SQL JOINs |
-| bcrypt | Password hashing, salt rounds between 8 and 12 |
-| jsonwebtoken | JWT generation & verification (standard tokens) |
+```
+https://your-deployment-url.com
+```
+
+---
+
+## ✨ Features
+
+- **User Authentication** — Secure registration and login with JWT-based sessions
+- **Role-Based Access Control** — Two roles (`contributor`, `maintainer`) with enforced permission boundaries
+- **Issue Management** — Create, view, update, and delete bug reports or feature requests
+- **Workflow Status Tracking** — Track issues through `open → in_progress → resolved` lifecycle
+- **Filtering & Sorting** — Query issues by type, status, and creation date
+- **System Metrics** — Internal metrics endpoint accessible to maintainers only
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology              | Purpose                                                |
+| ----------------------- | ------------------------------------------------------ |
+| **Node.js** (LTS 24.x+) | Server runtime                                         |
+| **TypeScript**          | Type-safe application code                             |
+| **Express.js**          | HTTP framework with modular router architecture        |
+| **PostgreSQL**          | Relational database                                    |
+| **pg** (native driver)  | Raw SQL via `pool.query()` — no ORMs or query builders |
+| **bcrypt**              | Password hashing (salt rounds: 8–12)                   |
+| **jsonwebtoken**        | JWT generation and verification                        |
+
+---
+
+## ⚙️ Setup & Installation
+
+### Prerequisites
+
+- Node.js LTS (v24.x or higher)
+- PostgreSQL (NeonDB, Supabase, or ElephantSQL for PostgreSQL)
+
+### 1. Clone the Repository
+
+```
+git clone https://github.com/JubairHossain-280/Next-Level-Assignments.git
+
+cd Next-Level-Assignments
+
+git checkout assignment-2
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure Environment Variables
+
+```env
+CONNECTION_STRING=your_db_connection_string
+PORT=3000
+SECRET_KEY=your_secret_key
+TOKEN_EXPIRES_IN=your_token_expire
+```
+
+### 5. Start the Server
+
+```bash
+# Development Server
+npm run dev
+
+# Production Server
+npm run build
+npm start
+```
+
+The server will be running at `http://localhost:3000`.
+
+---
+
+## 📡 API Endpoints
+
+### Authentication
+
+| Method | Endpoint           | Access | Description                          |
+| ------ | ------------------ | ------ | ------------------------------------ |
+| `POST` | `/api/auth/signup` | Public | Register a new user account          |
+| `POST` | `/api/auth/login`  | Public | Authenticate and receive a JWT token |
+
+### Issues
+
+| Method   | Endpoint          | Access          | Description                            |
+| -------- | ----------------- | --------------- | -------------------------------------- |
+| `POST`   | `/api/issues`     | Authenticated   | Create a new issue                     |
+| `GET`    | `/api/issues`     | Public          | Retrieve all issues (supports filters) |
+| `GET`    | `/api/issues/:id` | Public          | Retrieve a single issue by ID          |
+| `PATCH`  | `/api/issues/:id` | Authenticated   | Update an issue                        |
+| `DELETE` | `/api/issues/:id` | Maintainer only | Permanently delete an issue            |
+
+### Query Parameters (GET `/api/issues`)
+
+| Parameter | Values                            | Default  | Description                 |
+| --------- | --------------------------------- | -------- | --------------------------- |
+| `sort`    | `newest`, `oldest`                | `newest` | Sort order by creation date |
+| `type`    | `bug`, `feature_request`          | —        | Filter by issue type        |
+| `status`  | `open`, `in_progress`, `resolved` | —        | Filter by workflow status   |
+
+**Example:**
+
+```
+GET /api/issues?sort=oldest&type=bug&status=open
+```
+
+### Authentication Header
+
+Protected endpoints require the JWT token in the `Authorization` header:
+
+```
+Authorization: <JWT_TOKEN>
+```
+
+---
+
+## 🗄️ Database Schema
+
+### `users`
+
+| Column       | Type           | Constraints                                                 |
+| ------------ | -------------- | ----------------------------------------------------------- |
+| `id`         | `SERIAL`       | Primary Key, Auto-increment                                 |
+| `name`       | `VARCHAR(255)` | NOT NULL                                                    |
+| `email`      | `VARCHAR(255)` | NOT NULL, UNIQUE                                            |
+| `password`   | `VARCHAR(255)` | NOT NULL — bcrypt hashed, never returned                    |
+| `role`       | `VARCHAR(20)`  | DEFAULT `contributor` — one of: `contributor`, `maintainer` |
+| `created_at` | `TIMESTAMP`    | Auto-generated on insert                                    |
+| `updated_at` | `TIMESTAMP`    | Auto-refreshed on update                                    |
+
+### `issues`
+
+| Column        | Type           | Constraints                                                |
+| ------------- | -------------- | ---------------------------------------------------------- |
+| `id`          | `SERIAL`       | Primary Key, Auto-increment                                |
+| `title`       | `VARCHAR(150)` | NOT NULL, max 150 characters                               |
+| `description` | `TEXT`         | NOT NULL, min 20 characters                                |
+| `type`        | `VARCHAR(20)`  | NOT NULL — one of: `bug`, `feature_request`                |
+| `status`      | `VARCHAR(20)`  | DEFAULT `open` — one of: `open`, `in_progress`, `resolved` |
+| `reporter_id` | `INTEGER`      | NOT NULL — references `users.id` (validated in app logic)  |
+| `created_at`  | `TIMESTAMP`    | Auto-generated on insert                                   |
+| `updated_at`  | `TIMESTAMP`    | Auto-refreshed on update                                   |
 
 ---
 
 ## 👥 User Roles & Permissions
 
-| Role | Allowed Actions |
-| --- | --- |
-| **contributor** | • Register and log in<br>• Create new issues (bug or feature request)<br>• View all issues |
-| **maintainer** | • All contributor permissions<br>• Update any issue field<br>• Delete any issue<br>• Change issue workflow status independently<br>• Access internal system metrics |
+| Permission                      | Contributor | Maintainer |
+| ------------------------------- | :---------: | :--------: |
+| Register & log in               |     ✅      |     ✅     |
+| Create issues                   |     ✅      |     ✅     |
+| View all issues                 |     ✅      |     ✅     |
+| Update own issues (when `open`) |     ✅      |     ✅     |
+| Update any issue                |     ❌      |     ✅     |
+| Change issue status             |     ❌      |     ✅     |
+| Delete any issue                |     ❌      |     ✅     |
+| Access system metrics           |     ❌      |     ✅     |
 
 ---
 
-## 🔐 Authentication & Authorization System
+## 🔐 Security Notes
 
-- **JWT Flow:** Client sends credentials → Server validates & hashes/compares → Server returns signed JWT → Client attaches token to `Authorization: <token>` header → Server verifies signature & expiry before processing.
-- **Security Rules:**
-    - Passwords are never exposed in responses or logs.
-    - Protected endpoints reject requests without a valid JWT.
-    - Role verification occurs before privileged operations.
-
----
-
-## 🗄️ Database Schema Design
-
-### Table 1: `users`
-
-| Field | Requirement (Plain Text) |
-| --- | --- |
-| `id` | Auto-incrementing unique identifier for each account |
-| `name` | Full display name of the team member, must be provided |
-| `email` | Valid login address, must be unique across all accounts, must be provided |
-| `password` | Encrypted string stored securely, must be provided during registration, never returned in responses |
-| `role` | Determines system access level, defaults to `contributor`, must be `contributor` or `maintainer` |
-| `created_at` | Timestamp marking when the account was created, automatically generated on insert |
-| `updated_at` | Timestamp marking when the account was last updated, automatically refreshed on update |
-
-### Table 2: `issues`
-
-| Field | Requirement (Plain Text) |
-| --- | --- |
-| `id` | Auto-incrementing unique identifier for each reported item |
-| `title` | Short descriptive headline, must be provided, maximum 150 characters |
-| `description` | Detailed explanation of the problem or suggestion, must be provided, minimum 20 characters |
-| `type` | Categorizes the entry, must be either `bug` or `feature_request` |
-| `status` | Current workflow state, defaults to `open`. Status must be one of: `open`, `in_progress`, `resolved` |
-| `reporter_id` | References the user who submitted the issue (no foreign key constraint required; validate in application logic) |
-| `created_at` | Timestamp marking when the issue was created, automatically generated on insert |
-| `updated_at` | Timestamp marking when the issue was last updated, automatically refreshed on update |
+- Passwords are hashed using **bcrypt** before storage and never returned in any API response.
+- All protected endpoints validate the JWT signature and expiry before processing.
+- Role verification is enforced server-side before any privileged operation.
+- The JWT payload includes `id`, `name`, and `role` for downstream authorization checks.
 
 ---
 
-## 🌐 API Endpoints Specification
-
-### 🔹 Authentication Module
-
-### 1. User Registration
-
-**Access:** Public
-
-**Description:** Register a new user account with contributor or maintainer role
-
-**Endpoint**
-
-`POST /api/auth/signup`
-
-**Request Body**
-
-```json
-{
-  "name": "John Doe",
-  "email": "john.doe@devpulse.com",
-  "password": "securePassword123",
-  "role": "contributor"
-}
-```
-
-**Success Response (201 Created)**
-
-```json
-{
-  "success": true,
-  "message": "User registered successfully",
-  "data": {
-    "id": 1,
-    "name": "John Doe",
-    "email": "john.doe@devpulse.com",
-    "role": "contributor",
-    "created_at": "2026-01-20T09:00:00Z",
-    "updated_at": "2026-01-20T09:00:00Z"
-  }
-}
-```
-
----
-
-### 2. User Login
-
-**Access:** Public
-
-**Description:** Authenticate user and receive JWT token
-
-**Endpoint**
-
-`POST /api/auth/login`
-
-**Request Body**
-
-```json
-{
-  "email": "john.doe@devpulse.com",
-  "password": "securePassword123"
-}
-```
-
-**Success Response (200 OK)**
-
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
-      "id": 1,
-      "name": "John Doe",
-      "email": "john.doe@devpulse.com",
-      "role": "contributor",
-      "created_at": "2026-01-20T09:00:00Z",
-      "updated_at": "2026-01-20T09:00:00Z"
-    }
-  }
-}
-```
-
-> 💡 **Hint:** When signing the JWT during login, include the user's `id`, `name`, and `role` in the token payload. These fields will be needed later to identify the requester and enforce permissions.
-> 
-
----
-
-### 🔹 Issues Module
-
-### 3. Create Issue
-
-**Access:** Authenticated users (`contributor`, `maintainer`)
-
-**Description:** Create a new bug report or feature request
-
-**Endpoint**
-
-`POST /api/issues`
-
-**Headers**
+## 📁 Project Structure
 
 ```
-Authorization: <JWT_TOKEN>
+NEXT-LEVEL-ASSIGNMENTS/
+├── @types/           # Global type declaration
+├── node_modules/
+├── src/
+│   ├── config/       # dotenv configuration
+│   ├── db/           # Database connection pool
+│   ├── middleware/   # Auth & role verification
+│   ├── modules/      # Features in modular pattern
+│   │   ├── auth/     # Auth Feature
+│   │   └── issues/   # Issues Feature
+│   ├── types/        # Common types
+│   ├── utils/        # Reusable helpers
+│   ├── app.ts        # Application
+│   └── server.ts     # Running local server
+├── .env              # Environment variables
+├── .gitignore
+├── package-lock.json
+├── package.json
+├── README.md
+└── tsconfig.json     # TypeScript configuration
 ```
-
-**Request Body**
-
-```json
-{
-  "title": "Database connection timeout under load",
-  "description": "Pool exhausts after 50+ concurrent queries, causing 500 errors",
-  "type": "bug"
-}
-```
-
-**Success Response (201 Created)**
-
-```json
-{
-  "success": true,
-  "message": "Issue created successfully",
-  "data": {
-    "id": 45,
-    "title": "Database connection timeout under load",
-    "description": "Pool exhausts after 50+ concurrent queries, causing 500 errors",
-    "type": "bug",
-    "status": "open",
-    "reporter_id": 1,
-    "created_at": "2026-01-20T10:30:00Z",
-    "updated_at": "2026-01-20T10:30:00Z"
-  }
-}
-```
-
-> 💡 **Hint:** The `reporter_id` is extracted from the decoded JWT (`req.user.id`), not from the request body.
-> 
-
----
-
-### 4. Get All Issues
-
-**Access:** Public
-
-**Description:** Retrieve all issues with optional sorting and filtering
-
-**Endpoint**
-
-`GET /api/issues?sort=newest`
-
-**Query Parameters (`let’s take a challenge`)**
-
-| Param | Values | Default |
-| --- | --- | --- |
-| `sort` | `newest`, `oldest` | `newest` |
-| `type` | `bug`, `feature_request` | (none) |
-| `status` | `open`, `in_progress`, `resolved` | (none) |
-
-**Success Response (200 OK)**
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 45,
-      "title": "Database connection timeout under load",
-      "description": "Pool exhausts after 50+ concurrent queries, causing 500 errors",
-      "type": "bug",
-      "status": "open",
-      "reporter": {
-        "id": 1,
-        "name": "John Doe",
-        "role": "contributor"
-      },
-      "created_at": "2026-01-20T10:30:00Z",
-      "updated_at": "2026-01-20T14:45:00Z"
-    }
-  ]
-}
-```
-
-> 💡 **Hint:** To include `reporter` details without JOINs, fetch issues first, then fetch reporter data for each issue in a separate query (or batch with `WHERE id IN (...)`).
-> 
-
----
-
-### 5. Get Single Issue
-
-**Access:** Public
-
-**Description:** Retrieve full details of a specific issue
-
-**Endpoint**
-
-`GET /api/issues/:id`
-
-**Success Response (200 OK)**
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": 45,
-    "title": "Database connection timeout under load",
-    "description": "Pool exhausts after 50+ concurrent queries, causing 500 errors",
-    "type": "bug",
-    "status": "open",
-    "reporter": {
-      "id": 1,
-      "name": "John Doe",
-      "role": "contributor"
-    },
-    "created_at": "2026-01-20T10:30:00Z",
-    "updated_at": "2026-01-20T14:45:00Z"
-  }
-}
-```
-
----
-
-### 6. Update Issue
-
-**Access:** Maintainer (any issue) OR Contributor (own issue, only if status is `open`)
-
-**Description:** Update issue title, description, or type
-
-**Endpoint**
-
-`PATCH /api/issues/:id`
-
-**Headers**
-
-```
-Authorization: <JWT_TOKEN>
-```
-
-**Request Body**
-
-```json
-{
-  "title": "Updated: Database pool exhaustion fix needed",
-  "description": "Updated description with reproduction steps...",
-  "type": "bug"
-}
-```
-
-**Success Response (200 OK)**
-
-```json
-{
-  "success": true,
-  "message": "Issue updated successfully",
-  "data": {
-    "id": 45,
-    "title": "Updated: Database pool exhaustion fix needed",
-    "description": "Updated description with reproduction steps...",
-    "type": "bug",
-    "status": "in_progress",
-    "reporter_id": 1,
-    "created_at": "2026-01-20T10:30:00Z",
-    "updated_at": "2026-01-20T14:45:00Z"
-  }
-}
-```
-
----
-
-### 7. Delete Issue
-
-**Access:** Maintainer only
-
-**Description:** Permanently remove an issue from the system
-
-**Endpoint**
-
-`DELETE /api/issues/:id`
-
-**Headers**
-
-```
-Authorization: <JWT_TOKEN>
-```
-
-**Success Response (200 OK)**
-
-```json
-{
-  "success": true,
-  "message": "Issue deleted successfully"
-}
-```
-
----
-
-## 🚨 Common Response Patterns
-
-**Standard Success Response Structure**
-
-```json
-{
-  "success": true,
-  "message": "Operation description",
-  "data": "Response data"
-}
-```
-
-**Standard Error Response Structure**
-
-```json
-{
-  "success": false,
-  "message": "Error description",
-  "errors": "Error details"
-}
-```
-
-**HTTP Status Codes**
-
-*(Tip: Use the [`http-status-codes`](https://www.npmjs.com/package/http-status-codes) package for consistent status code references)*
-
-| Code | Reason Phrase | Usage |
-| --- | --- | --- |
-| `200` | OK | Successful GET, PATCH, PUT, DELETE |
-| `201` | Created | Successful POST (resource created) |
-| `204` | No Content | Successful DELETE with no response body |
-| `400` | Bad Request | Validation errors, invalid input, duplicate resource |
-| `401` | Unauthorized | Missing, expired, or invalid JWT token |
-| `403` | Forbidden | Valid token but insufficient role/permissions |
-| `404` | Not Found | Requested resource does not exist |
-| `409` | Conflict | Business logic conflict (e.g., editing resolved issue) |
-| `500` | Internal Server Error | Unexpected server or database error |
-
----
-
-## 🎤 Technical Interview Video (Answer Any 2)
-
-**Questions:**
-
-1. How does the Node.js event loop execute asynchronous tasks without blocking the single main thread?
-2. What is the purpose of `next()` in Express middleware, and what happens if it is omitted in a route handler?
-3. How do you create a centralized error-handling middleware in Express to safely catch both sync and async errors?
-4. What are the main differences between SQL (PostgreSQL) and NoSQL (MongoDB) regarding schema design and scaling?
-5. What is database connection pooling in PostgreSQL, and why is it preferred over opening a new client connection for every request?
-
-**🎤 Recording Instructions:**
-
-- Use your smartphone selfie camera or laptop webcam in **landscape (horizontal) mode**.
-- Record in a **well-lit, quiet room** with your **face fully visible** throughout the video.
-- Select and answer **any 2 questions** from the list above, spoken in **English**.
-- Keep each answer between **3–5 minutes**. Speak naturally from your understanding — avoid reading verbatim from notes or scripts.
-- Upload your video to **Google Drive**, **YouTube (Unlisted)**, or any cloud platform, and share a **publicly accessible link**.
